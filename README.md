@@ -1,12 +1,32 @@
-# One Click Forward
+# Bulk Inline Forward
 
-Thunderbird add-on to forward emails directly through a dropdown of predefined forwarding configurations.
+Thunderbird add-on to forward one or many emails to predefined forwarding configurations.
 
-By David Trapp
+Based on One Click Forward by David Trapp (MIT, see LICENSE).
 
-Set up forwarding configurations in settings, each with recipients, from identity, forward type, and a post-forward action (do nothing, archive, trash, or delete permanently). Then, use the message toolbar button "Quick Forward" to open a dropdown with your configurations and forward the email with one click. Alt+Click the toolbar button to auto-forward using the first configuration.
+Set up forwarding configurations in settings, each with recipients, from identity, forward type, and a post-forward action (do nothing, archive, trash, or delete permanently).
 
-If you hold Shift while clicking a configuration, the compose window will stay open without actually sending the email, so you can add further changes before sending it. However, if you do that, the after-forwarding action will not be executed, so you will have to archive/trash/delete the original email manually if you want to.
+## Single email
+
+Use the message toolbar button "Quick Forward" to open a dropdown with your configurations and forward the displayed email with one click. Alt+Click the button to auto-forward using the first configuration.
+
+If you hold Shift while clicking a configuration, the compose window stays open without sending, so you can make changes first. In that case the after-forwarding action is not executed.
+
+## Bulk forward (multiple emails)
+
+1. Select emails in the message list.
+2. Right-click the selection and choose "Bulk Forward Selected", or use the toolbar button.
+3. Pick a configuration and confirm. Every selected email is forwarded one by one, with a configurable delay between sends.
+
+Ctrl+Shift+F and Alt+Click on the toolbar button use the first configuration. They open the confirmation popup unless confirmation is turned off in settings; a configuration that deletes permanently always asks.
+
+## Safety
+
+- Only one batch runs at a time.
+- Exactly the confirmed messages are forwarded, including a right-clicked message outside the selection.
+- Messages are sent immediately. If Thunderbird only queues a forward in the Outbox (offline / send later), the original is left untouched.
+- A failing archive/trash/delete after a successful send is reported separately, so retrying never creates duplicates.
+- The sender is stored as an identity id. A missing or ambiguous identity stops the forward instead of silently using another account.
 
 ## Features
 
@@ -14,4 +34,12 @@ If you hold Shift while clicking a configuration, the compose window will stay o
 - Custom from identity per configuration
 - Forward as inline or attachment
 - Action after forwarding: do nothing / archive / trash / delete permanently
-- Alt+Click for quick auto-forward with first config
+- Batch forwarding with progress, per-message error reporting and Outbox detection
+
+## Build
+
+```
+./build.sh
+```
+
+Produces `bulk-inline-forward-v<version>.xpi`. Install it via Add-ons and Themes > gear icon > Install Add-on From File.

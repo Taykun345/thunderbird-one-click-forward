@@ -2,54 +2,266 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Forwarding Options</title>
+  <title>Bulk Forward - Settings</title>
   <style>
+    * { box-sizing: border-box; }
+
     body {
-      font-family: sans-serif;
-      margin: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px 24px;
+      color: #1a1a1a;
+      background: #fafafa;
+      max-width: 700px;
     }
-    p {
-      margin: 5px 0;
+
+    h1 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
     }
-    .config {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-bottom: 10px;
+
+    .subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 16px;
     }
-    .config h3 {
-      margin-top: 0;
+
+    .help-text {
+      font-size: 12px;
+      color: #888;
+      margin: 4px 0 12px;
+      line-height: 1.5;
     }
-    textarea {
+
+    h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin: 20px 0 8px;
+      padding-top: 12px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    details {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      background: white;
+      overflow: hidden;
+    }
+
+    summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 8px 12px;
+      background: #f5f5f5;
+      user-select: none;
+    }
+
+    summary:hover { background: #ececec; }
+
+    details > div {
+      padding: 12px;
+      border-top: 1px solid #eee;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: #444;
+    }
+
+    input[type="text"], textarea, select {
+      display: block;
       width: 100%;
-      height: 100px;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+      font-family: inherit;
+      margin-bottom: 8px;
     }
-    button {
-      margin-top: 10px;
-      margin-right: 5px;
+
+    textarea {
+      height: 80px;
+      resize: vertical;
     }
-    .red {
-      color: red;
+
+    input[type="radio"] {
+      margin-right: 4px;
     }
-    .green {
-      color: green;
+
+    .radio-group {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 8px;
     }
+
+    .radio-group label {
+      display: inline-flex;
+      align-items: center;
+      font-weight: 400;
+      cursor: pointer;
+    }
+
+    .move-buttons {
+      display: flex;
+      gap: 2px;
+    }
+
+    .move-buttons button {
+      font-size: 12px;
+      padding: 2px 6px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .move-buttons button:hover { background: #eee; }
+
+    .config-title {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .remove-btn {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #ef9a9a;
+      border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 4px;
+    }
+
+    .remove-btn:hover { background: #ffcdd2; }
+
+    /* Bulk settings */
+    .settings-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .settings-row label {
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .settings-row input[type="number"] {
+      width: 80px;
+      padding: 4px 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .settings-row input[type="checkbox"] {
+      margin-right: 4px;
+    }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 16px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background: white;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    .btn-primary {
+      background: #1a56db;
+      color: white;
+      border-color: #1a56db;
+      font-weight: 600;
+    }
+
+    .btn:hover { background: #f0f0f0; }
+    .btn-primary:hover { background: #1545b5; color: white; }
+
+    .btn-add {
+      font-size: 12px;
+      color: #1a56db;
+      padding: 4px 10px;
+    }
+
+    .red { color: #d32f2f; }
+    .green { color: #2e7d32; }
+
     #error span.green, #error span.red { display: none; }
-    #error[data-view="green"] span.green { display: revert; }
-    #error[data-view="red"] span.red { display: revert; }
+    #error[data-view="green"] span.green { display: block; margin-top: 8px; }
+    #error[data-view="red"] span.red { display: block; margin-top: 8px; }
   </style>
 </head>
-<body draggable="false">
-  <h1>Forwarding Configurations</h1>
-  <p>Each configuration allows forwarding to multiple recipients with specific settings.</p>
-  <p>Recipients: Enter email addresses or mailing list names, one per line. You can also use the <code>Name &lt;address&gt;</code> syntax.</p>
-  <p><strong>Alt+Click on the toolbar button will auto-forward using the first configuration.</strong></p>
-  <div id="configs"></div>
-  <button id="addConfig" style="font-size: smaller;">+ Add Configuration</button>
-  <button id="save" style="font-weight: bold; display: block; margin: 10px auto;">Save</button>
-  <div id="error" data-view="none">
-    <span class="red"></span>
-    <span class="green">Saved!</span>
+<body>
+  <h1>Bulk Forward Settings</h1>
+  <p class="subtitle">Configure forwarding targets and batch behavior.</p>
+
+  <div class="help-text" style="background: #e8f0fe; border: 1px solid #c5d9f7; border-radius: 6px; padding: 12px; margin-bottom: 16px; color: #1a1a1a;">
+    <strong style="font-size: 13px;">How to use:</strong><br><br>
+    <strong>Bulk forward (multiple emails):</strong><br>
+    1. Select emails in your inbox message list<br>
+    2. <strong>Right-click</strong> on the selected emails &rarr; choose <em>"Bulk Forward Selected"</em><br>
+    3. Pick a forwarding target from the popup &rarr; all emails are forwarded inline automatically<br><br>
+    <strong>Alternative ways to trigger bulk forward:</strong><br>
+    &bull; <strong>Keyboard shortcut:</strong> <code>Ctrl+Shift+F</code> - forwards all selected emails using the first configuration below. Opens the confirmation popup unless confirmation is turned off below; a configuration that deletes permanently always asks.<br>
+    &bull; <strong>Toolbar button:</strong> If not visible, right-click the Thunderbird toolbar &rarr; "Customize Toolbar" and drag the Bulk Forward icon in<br>
+    &bull; <strong>Alt+Click</strong> the toolbar button - same as Ctrl+Shift+F<br><br>
+    <strong>Single email (message reader):</strong><br>
+    When viewing a single email, use the small forward button in the message header area to quick-forward just that email.<br><br>
+    <strong>Note:</strong> When multiple emails are selected, Thunderbird enters a summary view where the toolbar may be limited.
+    The <strong>right-click context menu</strong> and <strong>Ctrl+Shift+F</strong> shortcut are the most reliable methods for bulk forwarding.
   </div>
+
+  <h2>Forwarding Configurations</h2>
+  <p class="help-text">
+    Each configuration defines a target: recipients, sender identity, forward type, and what to do after forwarding.<br>
+    Recipients: one per line. Use <code>Name &lt;address&gt;</code> syntax or plain email addresses.
+  </p>
+
+  <div id="configs"></div>
+  <button class="btn btn-add" id="addConfig">+ Add Configuration</button>
+
+  <h2>Batch Settings</h2>
+  <div class="settings-row">
+    <label for="delayInput">Delay between sends (ms):</label>
+    <input type="number" id="delayInput" min="500" max="10000" step="100" value="1500">
+  </div>
+  <p class="help-text" style="margin-top:0">
+    Minimum 500ms. Higher values prevent SMTP throttling when forwarding many emails.
+    Default: 1500ms.
+  </p>
+
+  <div class="settings-row">
+    <label>
+      <input type="checkbox" id="confirmCheck" checked>
+      Show confirmation before batch forwarding (always shown for "Delete permanently")
+    </label>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-primary" id="save">Save</button>
+    <div id="error" data-view="none">
+      <span class="red"></span>
+      <span class="green">Saved!</span>
+    </div>
+  </div>
+
   <script src="utils.js"></script>
   <script src="options.js"></script>
 </body>

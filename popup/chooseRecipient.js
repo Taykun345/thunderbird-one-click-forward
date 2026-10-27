@@ -1,4 +1,4 @@
-async function buildConfigsList () {
+async function buildConfigsList() {
   const { forwardingConfigs } = await browser.storage.local.get({ forwardingConfigs: [] })
   const { migrated, didMigrate } = migrateV2ToV2_1Configs(forwardingConfigs)
   if (didMigrate) {
@@ -10,12 +10,19 @@ async function buildConfigsList () {
     message.textContent = 'No forwarding configurations exist! '
     const link = document.createElement('a')
     link.href = '#'
-    link.addEventListener('click', () => { browser.runtime.openOptionsPage(); window.close(); })
+    link.addEventListener('click', () => { browser.runtime.openOptionsPage(); window.close() })
     link.textContent = 'Create in settings'
     message.appendChild(link)
     document.getElementById('configs').appendChild(message)
     document.getElementById('shiftInstruction').style.display = 'none'
     return
+  }
+
+  const actionLabels = {
+    none: 'Do nothing',
+    archive: 'Archive',
+    trash: 'Trash',
+    delete: 'Delete permanently'
   }
 
   const identityLabels = {}
@@ -29,12 +36,6 @@ async function buildConfigsList () {
     const option = document.createElement('button')
     const displayTitle = config.name || getDefaultTitle(config.recipients)
     option.innerText = displayTitle
-    const actionLabels = {
-      none: 'Do nothing',
-      archive: 'Archive',
-      trash: 'Trash',
-      delete: 'Delete permanently'
-    }
     const fromLabel = config.fromIdentity === 'default'
       ? 'Default'
       : identityLabels[config.fromIdentity] || config.fromIdentity

@@ -1,9 +1,9 @@
 {
   "manifest_version": 2,
-  "name": "One-Click Forward",
-  "version": "2.1",
-  "author": "David Trapp",
-  "description": "Forward emails directly through a dropdown of predefined recipients",
+  "name": "Bulk Inline Forward",
+  "version": "1.0",
+  "author": "CJS (based on One-Click Forward by David Trapp)",
+  "description": "Forward multiple selected emails inline to predefined recipients with one click",
   "permissions": [
     "accountsRead",
     "messagesRead",
@@ -12,22 +12,42 @@
     "compose",
     "compose.send",
     "storage",
-    "notifications"
+    "notifications",
+    "mailTabs",
+    "menus"
   ],
   "background": {
     "scripts": ["utils.js", "background.js"]
   },
+  "browser_action": {
+    "default_icon": {
+      "16": "icons/forward-icon-16.png",
+      "32": "icons/forward-icon-32.png"
+    },
+    "default_title": "Bulk Forward Selected Emails"
+  },
   "message_display_action": {
-    "default_icon": "icons/forward-icon-16.png",
-    "default_title": "Quick Forward"
+    "default_icon": {
+      "16": "icons/forward-icon-16.png",
+      "32": "icons/forward-icon-32.png"
+    },
+    "default_title": "Quick Forward This Email"
+  },
+  "commands": {
+    "bulk-forward-first": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+F"
+      },
+      "description": "Bulk forward selected emails using first configuration"
+    }
   },
   "icons": {
-    "48": "icons/mail-forward-48.png"
+    "48": "icons/forward-icon-48.png"
   },
-  "applications": {
+  "browser_specific_settings": {
     "gecko": {
-      "id": "one-click-forward@david-trapp.com",
-      "strict_min_version": "78.0"
+      "id": "bulk-inline-forward@cjs.si",
+      "strict_min_version": "91.0"
     }
   },
   "options_ui": {
