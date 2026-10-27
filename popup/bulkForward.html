@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Bulk Forward</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      width: 340px;
+      padding: 12px;
+      font-size: 13px;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .header-icon {
+      font-size: 20px;
+    }
+
+    .header h2 {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .selection-info {
+      background: #e8f0fe;
+      border: 1px solid #c5d9f7;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+    }
+
+    .selection-count {
+      font-weight: 600;
+      font-size: 14px;
+      color: #1a56db;
+    }
+
+    .selection-preview {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #555;
+      max-height: 60px;
+      overflow: hidden;
+    }
+
+    .selection-preview div {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.4;
+    }
+
+    .no-selection {
+      background: #fff3cd;
+      border-color: #ffc107;
+    }
+
+    .no-selection .selection-count { color: #856404; }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: #888;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .config-list {
+      margin-bottom: 12px;
+    }
+
+    .config-btn {
+      display: block;
+      width: 100%;
+      padding: 8px 10px;
+      margin-bottom: 4px;
+      border: 1px solid #d0d0d0;
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+    }
+
+    .config-btn:hover {
+      background: #e8f0fe;
+      border-color: #1a56db;
+    }
+
+    .config-btn:active {
+      background: #d0e0fc;
+    }
+
+    .config-btn .config-name {
+      font-weight: 600;
+      font-size: 13px;
+      display: block;
+    }
+
+    .config-btn .config-detail {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .config-btn .config-recipients {
+      font-size: 11px;
+      color: #1a56db;
+    }
+
+    /* Progress overlay */
+    .progress-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(250,250,250,0.95);
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .progress-overlay.active { display: flex; }
+
+    .progress-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid #e0e0e0;
+      border-top-color: #1a56db;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 12px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .progress-text {
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .progress-detail {
+      font-size: 12px;
+      color: #666;
+      margin-top: 4px;
+      text-align: center;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: #e0e0e0;
+      border-radius: 3px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #1a56db;
+      border-radius: 3px;
+      transition: width 0.3s;
+      width: 0%;
+    }
+
+    /* Confirmation */
+    .confirm-section {
+      display: none;
+      background: #fff8e1;
+      border: 1px solid #ffcc02;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+
+    .confirm-section.active { display: block; }
+
+    .confirm-text {
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .confirm-text strong { color: #1a56db; }
+
+    .confirm-buttons {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn {
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background: white;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background: #1a56db;
+      color: white;
+      border-color: #1a56db;
+    }
+
+    .btn:hover { background: #f5f5f5; }
+    .btn-primary:hover { background: #1545b5; color: white; }
+    .btn-compose:hover { background: #e4e4e4; }
+
+    .btn-compose {
+      background: #f0f0f0;
+      border-color: #bbb;
+    }
+
+    .footer {
+      font-size: 11px;
+      color: #999;
+      text-align: center;
+      padding-top: 8px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .footer a {
+      color: #1a56db;
+      text-decoration: none;
+    }
+
+    #error {
+      color: #d32f2f;
+      font-size: 12px;
+      margin-top: 8px;
+      display: none;
+      white-space: pre-line;
+    }
+
+    #error.active { display: block; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="header-icon">&#9993;</span>
+    <h2>Bulk Forward</h2>
+  </div>
+
+  <div class="selection-info" id="selectionInfo">
+    <div class="selection-count" id="selectionCount">Loading...</div>
+    <div class="selection-preview" id="selectionPreview"></div>
+  </div>
+
+  <div class="section-label">Forward to:</div>
+  <div class="config-list" id="configList"></div>
+
+  <div class="confirm-section" id="confirmSection">
+    <div class="confirm-text" id="confirmText"></div>
+    <div class="confirm-buttons">
+      <button class="btn btn-primary" id="confirmSend">
+        &#9993; Send All
+      </button>
+      <button class="btn btn-compose" id="confirmCompose" title="Open compose windows for review instead of sending directly">
+        &#128221; Review First
+      </button>
+      <button class="btn" id="confirmCancel">Cancel</button>
+    </div>
+  </div>
+
+  <div class="progress-overlay" id="progressOverlay">
+    <div class="progress-spinner"></div>
+    <div class="progress-text" id="progressText">Forwarding...</div>
+    <div class="progress-detail" id="progressDetail"></div>
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+  </div>
+
+  <div id="error"></div>
+
+  <div class="footer">
+    Hold <b>Shift</b> when clicking a config to review each email before sending.
+  </div>
+
+  <script src="../utils.js"></script>
+  <script src="bulkForward.js"></script>
+</body>
+</html>

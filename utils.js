@@ -48,18 +48,9 @@ function migrateV2ToV2_1Configs(configs = []) {
 
 function migrateV1ToV2Configs(forwardingAddresses) {
   return forwardingAddresses.map(address => {
-    const match = address.match(/(.*)\s*<(.+)>/)
-    let name, recipients
-    if (match) {
-      name = ''
-      recipients = [address]  // keep full for Thunderbird
-    } else {
-      name = ''
-      recipients = [address]
-    }
     return {
-      name,
-      recipients,
+      name: '',
+      recipients: [address],
       fromIdentity: 'default',
       forwardType: 'inline',
       actionAfter: 'none'
