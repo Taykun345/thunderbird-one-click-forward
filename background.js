@@ -252,11 +252,13 @@ async function performSingleForward(config, compose = false) {
 // batches (popup, context menu, shortcut and Alt+click all end up here).
 let activeBatch = null
 
-// Messages targeted by the last context-menu click. The context menu can
-// target messages other than the normal selection, so the popup it opens
-// must use these instead of re-reading the selection.
-let contextSelection = null
-const CONTEXT_SELECTION_TTL_MS = 60000
+// Messages captured when the bulk popup is opened. The context menu can
+// target messages other than the normal selection, and the popup may open
+// as a separate window (toolbar button removed) where "current window" no
+// longer is the mail window - so the popup previews these instead of
+// re-reading the selection.
+let pendingSelection = null
+const PENDING_SELECTION_TTL_MS = 60000
 
 async function collectMessageList(list) {
   let messages = list.messages || []
@@ -278,13 +280,13 @@ async function getSelectedMessages() {
   return collectMessageList(selectedList)
 }
 
-// Messages the popup should preview: the context-menu target if the popup
-// was opened from the context menu, otherwise the current selection.
+// Messages the popup should preview: the ones captured when it was opened,
+// otherwise the current selection.
 async function getPreviewMessages() {
-  if (contextSelection && Date.now() - contextSelection.at < CONTEXT_SELECTION_TTL_MS) {
-    return contextSelection.messages
+  if (pendingSelection && Date.now() - pendingSelection.at < PENDING_SELECTION_TTL_MS) {
+    return pendingSelection.messages
   }
-  contextSelection = null
+  pendingSelection = null
   return getSelectedMessages()
 }
 
@@ -318,7 +320,7 @@ async function performBatchForward(config, compose = false, messageIds = null) {
     config = migrateV2ToV2_1Config(config)
     const settings = await getSettings()
     const messages = messageIds ? await getMessagesByIds(messageIds) : await getSelectedMessages()
-    contextSelection = null
+    pendingSelection = null
 
     if (!messages.length) {
       browser.notifications.create({
@@ -388,19 +390,43 @@ async function performBatchForward(config, compose = false, messageIds = null) {
 // Event listeners
 // ============================================================
 
-async function openBulkPopup(tabId) {
+// Opens the bulk popup for `messages` (captured by the caller while the mail
+// window is still the current one). Uses the toolbar button's popup; when
+// that is unavailable (button removed from the toolbar, or the window has
+// no toolbar) the same page opens as a small separate window.
+async function openBulkPopup(tabId, messages) {
+  pendingSelection = { messages, at: Date.now() }
+
+  let opened = false
   try {
     await browser.browserAction.setPopup({
       tabId,
       popup: 'popup/bulkForward.html'
     })
-    await browser.browserAction.openPopup()
+    // Returns false (or throws) when the action is not available
+    opened = (await browser.browserAction.openPopup()) !== false
+  } catch (e) {
+    console.warn('Toolbar popup unavailable, opening a window instead:', e)
   } finally {
     await browser.browserAction.setPopup({
       tabId,
       popup: ''
+    }).catch(() => {})
+  }
+
+  if (!opened) {
+    await browser.windows.create({
+      url: browser.runtime.getURL('popup/bulkForward.html'),
+      type: 'popup',
+      width: 400,
+      height: 560
     })
   }
+}
+
+async function getActiveTabId() {
+  const tabs = await browser.tabs.query({ active: true, currentWindow: true })
+  return tabs.length ? tabs[0].id : undefined
 }
 
 // Shortcut / Alt+click: forward with the first config, unless confirmation
@@ -418,13 +444,10 @@ async function instantBatchForward(tabId) {
   const config = migrateV2ToV2_1Config(forwardingConfigs[0])
   const settings = await getSettings()
   if (requiresConfirmation(config, settings)) {
-    contextSelection = null
-    if (tabId === undefined) {
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true })
-      if (!tabs.length) return
-      tabId = tabs[0].id
-    }
-    await openBulkPopup(tabId)
+    const messages = await getSelectedMessages()
+    if (tabId === undefined) tabId = await getActiveTabId()
+    if (tabId === undefined) return
+    await openBulkPopup(tabId, messages)
     return
   }
   await performBatchForward(config)
@@ -436,8 +459,7 @@ browser.browserAction.onClicked.addListener(async (tab, info) => {
     if (info && info.modifiers && info.modifiers.includes('Alt')) {
       await instantBatchForward(tab.id)
     } else {
-      contextSelection = null
-      await openBulkPopup(tab.id)
+      await openBulkPopup(tab.id, await getSelectedMessages())
     }
   } catch (e) {
     console.error(e)
@@ -558,17 +580,14 @@ browser.menus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== 'bulk-forward-menu') return
   try {
     // Capture the context-menu target now: it can differ from the selection
-    contextSelection = info.selectedMessages
-      ? { messages: await collectMessageList(info.selectedMessages), at: Date.now() }
-      : null
+    const messages = info.selectedMessages
+      ? await collectMessageList(info.selectedMessages)
+      : await getSelectedMessages()
 
     let tabId = tab && tab.id
-    if (tabId === undefined) {
-      const tabs = await browser.tabs.query({ active: true, currentWindow: true })
-      if (!tabs.length) return
-      tabId = tabs[0].id
-    }
-    await openBulkPopup(tabId)
+    if (tabId === undefined) tabId = await getActiveTabId()
+    if (tabId === undefined) return
+    await openBulkPopup(tabId, messages)
   } catch (e) {
     console.error(e)
     browser.notifications.create({
