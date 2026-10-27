@@ -22,10 +22,23 @@ async function getMessageId () {
 
 async function getIdentityIdForMessage(messageId) {
   const messageHeader = await browser.messages.get(messageId)
+  if (!messageHeader.folder) {
+    throw new Error('Message has no folder - choose a sender identity in the configuration.')
+  }
   const account = await browser.accounts.get(messageHeader.folder.accountId)
-  const identity = account.identities.find(id => messageHeader.recipients.some(r => r === id.email || r.replace(/^.*<|>.*$/g, '') === id.email))
+  const addressed = [
+    ...(messageHeader.recipients || []),
+    ...(messageHeader.ccList || [])
+  ].map(r => r.replace(/^.*<|>.*$/g, '').trim().toLowerCase())
+  const identity = (account.identities || []).find(id => addressed.includes(id.email.toLowerCase()))
+  if (identity) return identity.id
 
-  return (identity ?? await browser.identities.getDefault(account.id)).id
+  // getDefault() returns null e.g. for Local Folders without an identity
+  const fallback = await browser.identities.getDefault(account.id)
+  if (!fallback) {
+    throw new Error(`Account "${account.name}" has no sender identity - choose one in the configuration.`)
+  }
+  return fallback.id
 }
 
 async function getIdentityIdFromConfig(messageId, fromIdentity) {
@@ -122,11 +135,42 @@ async function performForward(config, compose = false) {
 
   if (!compose) {
     await new Promise(resolve => setTimeout(resolve, 1500)) // Fails if called too quickly after beginForward!
-    console.log('Sent:', await browser.compose.sendMessage(tab.id))
+    if (!await sendComposeNow(tab.id)) {
+      browser.notifications.create({
+        "type": "basic",
+        "title": "Forward queued",
+        "message": "The forward was placed in the Outbox. The original was left untouched."
+      })
+      return
+    }
 
-    const messageHeader = await browser.messages.get(messageId)
-    await applyPostForwardAction(config.actionAfter, messageId, messageHeader.folder.accountId)
+    // The forward is sent: a failing cleanup must not be reported as a
+    // failed forward, or a retry would send a duplicate.
+    try {
+      const messageHeader = await browser.messages.get(messageId)
+      await applyPostForwardAction(config.actionAfter, messageId, messageHeader.folder.accountId)
+    } catch (e) {
+      console.error(e)
+      browser.notifications.create({
+        "type": "basic",
+        "title": "Forwarded, but post-forward action failed",
+        "message": String(e)
+      })
+    }
   }
+}
+
+// Sends immediately. Returns true only when Thunderbird reports the message
+// as sent; a message placed in the Outbox (send later / offline) returns
+// false so that the original is never archived or deleted before delivery.
+async function sendComposeNow(tabId) {
+  const result = await browser.compose.sendMessage(tabId, { mode: 'sendNow' })
+  console.log('Sent:', result)
+  if (result === false) return false
+  if (result && typeof result === 'object' && result.mode && result.mode !== 'sendNow') {
+    return false
+  }
+  return true
 }
 
 // Handle Alt+Click for auto-forward
