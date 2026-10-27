@@ -45,13 +45,20 @@ async function getIdentityIdFromConfig(messageId, fromIdentity) {
   if (fromIdentity === 'default') {
     return getIdentityIdForMessage(messageId)
   }
+  // Configs store an identity id. Older configs stored an email address;
+  // that is only accepted when it matches exactly one identity. A missing or
+  // ambiguous sender is an error, never a silent fallback to another account.
   const accounts = await browser.accounts.list()
-  for (const account of accounts) {
-    const identity = account.identities.find(id => id.email === fromIdentity)
-    if (identity) return identity.id
+  const identities = accounts.flatMap(account => account.identities || [])
+  const byId = identities.find(id => id.id === fromIdentity)
+  if (byId) return byId.id
+
+  const byEmail = identities.filter(id => id.email === fromIdentity)
+  if (byEmail.length === 1) return byEmail[0].id
+  if (byEmail.length > 1) {
+    throw new Error(`Sender "${fromIdentity}" matches several identities - pick one in the settings.`)
   }
-  // Fallback to default
-  return getIdentityIdForMessage(messageId)
+  throw new Error(`Sender identity "${fromIdentity}" no longer exists - pick one in the settings.`)
 }
 
 async function getTrashFolderId(accountId) {

@@ -18,6 +18,13 @@ async function buildConfigsList () {
     return
   }
 
+  const identityLabels = {}
+  for (const account of await browser.accounts.list()) {
+    for (const identity of account.identities || []) {
+      identityLabels[identity.id] = `${identity.email} (${account.name})`
+    }
+  }
+
   for (const config of migrated) {
     const option = document.createElement('button')
     const displayTitle = config.name || getDefaultTitle(config.recipients)
@@ -28,7 +35,10 @@ async function buildConfigsList () {
       trash: 'Trash',
       delete: 'Delete permanently'
     }
-    option.title = `Recipients: ${config.recipients.join(', ')}\nFrom: ${config.fromIdentity}\nType: ${config.forwardType}\nAfter: ${actionLabels[config.actionAfter] || 'Do nothing'}`
+    const fromLabel = config.fromIdentity === 'default'
+      ? 'Default'
+      : identityLabels[config.fromIdentity] || config.fromIdentity
+    option.title = `Recipients: ${config.recipients.join(', ')}\nFrom: ${fromLabel}\nType: ${config.forwardType}\nAfter: ${actionLabels[config.actionAfter] || 'Do nothing'}`
     option.addEventListener('click', e => {
       try {
         browser.runtime.sendMessage({ action: 'chooseRecipient', config, compose: e.shiftKey })
