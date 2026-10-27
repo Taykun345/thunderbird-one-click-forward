@@ -36,10 +36,21 @@ Ctrl+Shift+F and Alt+Click on the toolbar button use the first configuration. Th
 - Action after forwarding: do nothing / archive / trash / delete permanently
 - Batch forwarding with progress, per-message error reporting and Outbox detection
 
+## Download
+
+Ready-made `.xpi` files are attached to the [Releases](../../releases). Install via Add-ons and Themes > gear icon > Install Add-on From File.
+
 ## Build
 
 ```
 ./build.sh
 ```
 
-Produces `bulk-inline-forward-v<version>.xpi`. Install it via Add-ons and Themes > gear icon > Install Add-on From File.
+Produces `bulk-inline-forward-v<version>.xpi`.
+
+GitHub Actions builds the `.xpi` on every push (run artifacts). To publish a release, bump `version` in `manifest.json`, commit, then push a matching tag:
+
+```
+git tag v1.1
+git push origin v1.1
+```
